@@ -1,4 +1,4 @@
-use std::{process::Command, slice::SliceIndex};
+use std::{process::Command};
 use std::io;
 use std::str::from_utf8;
 use std::path::Path;
@@ -28,20 +28,66 @@ fn main() {
                     SBTExecution::CouldNotRun(error) => println!("Could not run sbt: {}", error),
                     SBTExecution::CouldNotDecodeOutput(error) => println!("Invalid UTF8 output from sbt: {}", error),
                     SBTExecution::UnrecognisedOutputStructure(error) => println!("Unrecognised output format from sbt: {}", error),
-                    SBTExecution::SingleModuleProject(base_directory) => println!("{}", base_directory),
-                    SBTExecution::MultiModuleProject(base_directories) => println!("{}", base_directories.join("\n")),
+                    SBTExecution::SuccessfulExecution(project_type) => handle_project_type(project_type)
+
                 }
             }
         }
     }
 }
 
+struct ProdSource(String);
+
+struct TestSource(String);
+
+fn handle_project_type(project_type: ProjectType) {
+    let ProjectType(projects) = project_type;
+    let pairs: Vec<(ProdSource, TestSource)> =
+        projects.iter().map({ |p|
+            (ProdSource(format!("{}/src/main/scala", p)),  TestSource(format!("{}/src/test/scala", p)))
+        }).collect();
+
+    let prod_sources: Vec<&ProdSource> = pairs.iter().map(|(p,_)| p).collect();
+    let test_sources: Vec<&TestSource> = pairs.iter().map(|(_,t)| t).collect();
+    let sublime_project = build_sublime_project(prod_sources, test_sources);
+
+    match serde_json::to_string(&sublime_project) {
+        Ok(st_project_json) => println!("{}", st_project_json),
+        Err(error) => println!("Could not convert Sublime Text Project model to JSON: {}", error)
+    }
+}
+
+fn build_sublime_project(prod_sources: Vec<&ProdSource>, test_sources: Vec<&TestSource>) -> SublimeProject {
+    let po = PathObject { path: ".".to_owned() };
+
+    let scoggle  =
+        ScoggleObject {
+            production_srcs: prod_sources.iter().map(|ps| ps.0.to_owned()).collect(),
+            test_srcs: test_sources.iter().map(|ts| ts.0.to_owned()).collect(),
+            test_suffixes: vec!["Spec.scala".to_string(), "Suite.scala".to_string(), "Test.scala".to_string()],
+        };
+
+    let settings_object =
+        SettingsObject {
+            scoggle: scoggle
+        };
+
+    let sublime_project =
+        SublimeProject {
+            folders: vec![po],
+            settings: settings_object
+        };
+
+    sublime_project
+}
+
+struct ProjectType(Vec<String>);
+
 enum SBTExecution {
     CouldNotRun(String),
     CouldNotDecodeOutput(String),
     UnrecognisedOutputStructure(String),
-    SingleModuleProject(String),
-    MultiModuleProject(Vec<String>),
+    SuccessfulExecution(ProjectType)
 }
 
 fn run_sbt() -> SBTExecution {
@@ -53,39 +99,35 @@ fn run_sbt() -> SBTExecution {
                 .output() {
                     Ok(output) => {
                         match from_utf8(&output.stdout) {
-                            Ok(output_str) => {
-                               let lines:Vec<_> = output_str.lines().collect();
-
-                                let line_result: SBTExecution =
-                                    if lines.len() == 1 {
-                                        SBTExecution::SingleModuleProject(lines[0].trim().to_string())
-                                    } else if lines.len() % 2 == 0 {
-                                        //multimodule, 2 lines per module
-                                        // line1: moduleName / baseDirectory <- we can ignore this
-                                        // line2: <actual module path> <- we need this
-                                        SBTExecution::MultiModuleProject(
-                                            lines
-                                                .iter()
-                                                .enumerate()
-                                                .filter(|(i, _)| (i+1) % 2 == 0) // only get the second line
-                                                .map(|(_, v)| format!("{}", v.trim()))
-                                                .collect()
-                                        )
-                                    } else {
-                                        //big fat error!
-                                        SBTExecution::UnrecognisedOutputStructure(format!("{:?}", &lines))
-                                    };
-
-
-                                //map each path to src/main/scala + src/test/scala
-                                //use Serde to down out to ST project structure as JSON.
-                                line_result
-                            },
+                            Ok(output_str) => get_base_directories(output_str),
                             Err(error) => SBTExecution::CouldNotDecodeOutput(error.to_string())
                         }
                     },
                     Err(error) => SBTExecution::CouldNotRun(error.to_string())
                 }
+}
+
+fn get_base_directories(output_str: &str) -> SBTExecution {
+    let lines:Vec<_> = output_str.lines().collect();
+
+    if lines.len() == 1 {
+        SBTExecution::SuccessfulExecution(ProjectType(vec![lines[0].trim().to_string()]))
+    } else if lines.len() % 2 == 0 {
+        //multimodule, 2 lines per module
+        // line1: moduleName / baseDirectory <- we can ignore this
+        // line2: <actual module path> <- we need this
+        SBTExecution::SuccessfulExecution(ProjectType(
+            lines
+                .iter()
+                .enumerate()
+                .filter(|(i, _)| (i+1) % 2 == 0) // only get the second line
+                .map(|(_, v)| format!("{}", v.trim()))
+                .collect()
+        ))
+    } else {
+        //big fat error!
+        SBTExecution::UnrecognisedOutputStructure(format!("{:?}", &lines))
+    }
 }
 
 enum SBTVersion {
@@ -120,8 +162,4 @@ fn verify_sbt_version() -> SBTVersion {
         },
         Err(_) => SBTVersion::NotFound
     }
-}
-
-fn to_io_error(message: &str) -> io::Error {
-    io::Error::new(io::ErrorKind::Other, message.to_string())
 }
