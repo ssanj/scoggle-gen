@@ -4,6 +4,7 @@ use std::str::from_utf8;
 use std::path::Path;
 use regex::{Regex, Captures};
 use std::fs;
+use std::env;
 
 use crate::model::{PathObject, ScoggleObject, SettingsObject, SublimeProject};
 // use serde_json::Result;
@@ -12,15 +13,21 @@ mod model;
 
 const SBT_BUILD_PROPERTIES: &str = "project/build.properties";
 const BUILD_SBT: &str = "build.sbt";
+const MIN_SBT_VERSION: u16 = 145;
+const MIN_SBT_VERSION_STRING: &str = "1.4.5";
 
 fn main() {
+    let cd = env::current_dir().expect("Could not find current dir");
+    let current_directory = cd.to_string_lossy();
+    println!("current dir: {}", current_directory);
+
     if !Path::new(BUILD_SBT).exists() {
         println!("Could not find {}. Please run this in an SBT project directory", BUILD_SBT)
     } else if !Path::new("project/build.properties").exists() {
         println!("Could not find project/build.properties. Please run this in an SBT project directory")
     } else {
         match verify_sbt_version() {
-            SBTVersion::UnsupportedSBTVersion(sbt_version) => println!("Unsupported SBT version: {}", sbt_version),
+            SBTVersion::UnsupportedSBTVersion(sbt_version) => println!("Required SBT version >= {}. Your version: {}", MIN_SBT_VERSION_STRING, sbt_version),
             SBTVersion::UnknownVersionString(sbt_version) => println!("Unknown SBT version string: {}", sbt_version),
             SBTVersion::NotFound => println!("{} was not found", SBT_BUILD_PROPERTIES),
             SBTVersion::Valid => {
@@ -28,7 +35,7 @@ fn main() {
                     SBTExecution::CouldNotRun(error) => println!("Could not run sbt: {}", error),
                     SBTExecution::CouldNotDecodeOutput(error) => println!("Invalid UTF8 output from sbt: {}", error),
                     SBTExecution::UnrecognisedOutputStructure(error) => println!("Unrecognised output format from sbt: {}", error),
-                    SBTExecution::SuccessfulExecution(project_type) => handle_project_type(project_type)
+                    SBTExecution::SuccessfulExecution(project_type) => handle_project_type(&current_directory, project_type)
 
                 }
             }
@@ -40,11 +47,13 @@ struct ProdSource(String);
 
 struct TestSource(String);
 
-fn handle_project_type(project_type: ProjectType) {
-    let ProjectType(projects) = project_type;
+fn handle_project_type(current_directory: &str, project_type: ProjectType) {
+    let ProjectType(mut projects) = project_type.clone();
     let pairs: Vec<(ProdSource, TestSource)> =
-        projects.iter().map({ |p|
-            (ProdSource(format!("{}/src/main/scala", p)),  TestSource(format!("{}/src/test/scala", p)))
+        projects
+            .iter_mut().map(|p| p.replace(current_directory, ""))
+            .map({ |p|
+                (ProdSource(format!("{}/src/main/scala", p)),  TestSource(format!("{}/src/test/scala", p)))
         }).collect();
 
     let prod_sources: Vec<&ProdSource> = pairs.iter().map(|(p,_)| p).collect();
@@ -81,6 +90,7 @@ fn build_sublime_project(prod_sources: Vec<&ProdSource>, test_sources: Vec<&Test
     sublime_project
 }
 
+#[derive(Clone)]
 struct ProjectType(Vec<String>);
 
 enum SBTExecution {
@@ -94,7 +104,7 @@ fn run_sbt() -> SBTExecution {
         println!("Running SBT...");
 
         match Command::new("sbt")
-                .arg("print baseDirectory")
+                .arg("set offline := true; print baseDirectory")
                 .arg("--error")
                 .output() {
                     Ok(output) => {
@@ -147,8 +157,8 @@ fn verify_sbt_version() -> SBTVersion {
                     let sbt_version_no_str = sbt_version.split(".").collect::<Vec<&str>>().join("");
                     match sbt_version_no_str.parse::<u16>() {
                         Ok(sbt_version_no) => {
-                            if sbt_version_no < 150 {
-                                SBTVersion::UnsupportedSBTVersion(sbt_version_no_str.to_owned())
+                            if sbt_version_no < MIN_SBT_VERSION {
+                                SBTVersion::UnsupportedSBTVersion(sbt_version.to_owned())
                             } else {
                                 SBTVersion::Valid
                             }
