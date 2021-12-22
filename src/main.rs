@@ -6,8 +6,7 @@ use regex::{Regex, Captures};
 use std::fs;
 use std::env;
 
-use crate::model::{PathObject, ScoggleObject, SettingsObject, SublimeProject};
-// use serde_json::Result;
+use crate::model::*;
 
 mod model;
 
@@ -43,9 +42,6 @@ fn main() {
     }
 }
 
-struct ProdSource(String);
-
-struct TestSource(String);
 
 fn handle_project_type(current_directory: &str, project_type: ProjectType) {
     let ProjectType(mut projects) = project_type.clone();
@@ -90,15 +86,6 @@ fn build_sublime_project(prod_sources: Vec<&ProdSource>, test_sources: Vec<&Test
     sublime_project
 }
 
-#[derive(Clone)]
-struct ProjectType(Vec<String>);
-
-enum SBTExecution {
-    CouldNotRun(String),
-    CouldNotDecodeOutput(String),
-    UnrecognisedOutputStructure(String),
-    SuccessfulExecution(ProjectType)
-}
 
 fn run_sbt() -> SBTExecution {
         println!("Running SBT...");
@@ -138,13 +125,6 @@ fn get_base_directories(output_str: &str) -> SBTExecution {
         //big fat error!
         SBTExecution::UnrecognisedOutputStructure(format!("{:?}", &lines))
     }
-}
-
-enum SBTVersion {
-    Valid,
-    UnsupportedSBTVersion(String),
-    UnknownVersionString(String),
-    NotFound
 }
 
 fn verify_sbt_version() -> SBTVersion {

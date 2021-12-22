@@ -49,3 +49,24 @@ pub struct ScoggleObject {
     pub test_suffixes: Vec<String>,
 }
 
+pub struct ProdSource(pub String);
+
+pub struct TestSource(pub String);
+
+
+#[derive(Clone)]
+pub struct ProjectType(pub Vec<String>);
+
+pub enum SBTExecution {
+    CouldNotRun(String),
+    CouldNotDecodeOutput(String),
+    UnrecognisedOutputStructure(String),
+    SuccessfulExecution(ProjectType)
+}
+
+pub enum SBTVersion {
+    Valid,
+    UnsupportedSBTVersion(String),
+    UnknownVersionString(String),
+    NotFound
+}
