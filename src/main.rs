@@ -17,6 +17,8 @@ const SBT_BUILD_PROPERTIES: &str = "project/build.properties";
 const BUILD_SBT: &str = "build.sbt";
 const MIN_SBT_VERSION: u16 = 145;
 const MIN_SBT_VERSION_STRING: &str = "1.4.5";
+const SCALA_PROD_PATH: &str = "/src/main/scala";
+const SCALA_TEST_PATH: &str = "/src/test/scala";
 
 fn main() {
     let cd = env::current_dir().expect("Could not find current dir");
@@ -77,7 +79,7 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
         projects
             .iter_mut().map(|p| p.replace(current_directory, ""))
             .map({ |p|
-                (ProdSource(format!("{}/src/main/scala", p)),  TestSource(format!("{}/src/test/scala", p)))
+                (ProdSource(format!("{}{}", p, SCALA_PROD_PATH)),  TestSource(format!("{}{}", p, SCALA_TEST_PATH)))
         }).collect();
 
     let prod_sources: Vec<&ProdSource> = pairs.iter().map(|(p,_)| p).collect();
