@@ -19,9 +19,10 @@ const MIN_SBT_VERSION: u16 = 145;
 const MIN_SBT_VERSION_STRING: &str = "1.4.5";
 const SCALA_PROD_PATH: &str = "/src/main/scala";
 const SCALA_TEST_PATH: &str = "/src/test/scala";
+const SBT_VERSION_REGEX: &str = r"sbt.version\s*=\s*(.+)";
 
 fn main() {
-    let cd = env::current_dir().expect("Could not find current dir");
+    let cd = env::current_dir().expect("Could not find current dir"); // If this fails we have other issues
     let current_directory = cd.to_string_lossy();
 
     let project_name_type =
@@ -30,21 +31,13 @@ fn main() {
             .map(|f| ProjectName::ProjectDir(f.to_string_lossy().to_string()))
             .unwrap_or_else(|| ProjectName::Random());
 
-
-
-    //TODO: Remove
-    println!("current dir: {}", current_directory);
-    // println!("working dir: {}", project_name);
-
     if !Path::new(BUILD_SBT).exists() {
         println!("Could not find {}. Please run this in an SBT project directory", BUILD_SBT)
-    } else if !Path::new("project/build.properties").exists() {
-        println!("Could not find {}. Please run this in an SBT project directory", SBT_BUILD_PROPERTIES)
     } else {
         match verify_sbt_version() {
             SBTVersion::UnsupportedSBTVersion(sbt_version) => println!("Required SBT version >= {}. Your version: {}", MIN_SBT_VERSION_STRING, sbt_version),
             SBTVersion::UnknownVersionString(sbt_version) => println!("Unknown SBT version string: {}", sbt_version),
-            SBTVersion::NotFound => println!("{} was not found", SBT_BUILD_PROPERTIES),
+            SBTVersion::NotFound => println!("Could not find {}. Please run this in an SBT project directory", SBT_BUILD_PROPERTIES),
             SBTVersion::Valid => {
                 match run_sbt() {
                     SBTExecution::CouldNotRun(error) => println!("Could not run sbt: {}", error),
@@ -63,6 +56,7 @@ fn default_project_name() -> String  {
 }
 
 fn handle_project_type(project_name_type: ProjectName, current_directory: &str, project_type: ProjectType) {
+    // TODO: extract function
     let project_name = match project_name_type {
         ProjectName::ProjectDir(pn) => pn,
         ProjectName::Random() => {
@@ -88,8 +82,8 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
 
     match serde_json::to_string_pretty(&sublime_project) {
         Ok(st_project_json) => {
-            //check for existing sublime-project and use random in that case
             let project_file_content = format!("{}", st_project_json);
+            // TODO: extract function
             let project_file_written = {
                     let open_result =
                         fs::OpenOptions::new()
@@ -158,10 +152,10 @@ fn run_sbt() -> SBTExecution {
 fn get_base_directories(output_str: &str) -> SBTExecution {
     let lines:Vec<_> = output_str.lines().collect();
 
-    if lines.len() == 1 {
+    if lines.len() == 1 { //Single module
         SBTExecution::SuccessfulExecution(ProjectType(vec![lines[0].trim().to_string()]))
     } else if lines.len() % 2 == 0 {
-        //multimodule, 2 lines per module
+        // Multimodule, 2 lines per module
         // line1: moduleName / baseDirectory <- we can ignore this
         // line2: <actual module path> <- we need this
         SBTExecution::SuccessfulExecution(ProjectType(
@@ -173,19 +167,20 @@ fn get_base_directories(output_str: &str) -> SBTExecution {
                 .collect()
         ))
     } else {
-        //big fat error!
         SBTExecution::UnrecognisedOutputStructure(format!("{:?}", &lines))
     }
 }
 
 fn verify_sbt_version() -> SBTVersion {
-    let re = Regex::new(r"sbt.version\s*=\s*(.+)").unwrap(); // Fail as we should write correct regexes.
-    match fs::read_to_string("project/build.properties") {
+    let re = Regex::new(SBT_VERSION_REGEX).unwrap(); // Fail as we should write correct regexes.
+    match fs::read_to_string(SBT_BUILD_PROPERTIES) {
         Ok(version) => {
             let caps: Option<Captures> = re.captures(&version);
             match caps.and_then(|group| group.get(1)).map(|m| m.as_str() ) {
                 Some(sbt_version) => {
                     let sbt_version_no_str = sbt_version.split(".").collect::<Vec<&str>>().join("");
+
+                    //TODO: extract function - is_valid_sbt_version
                     match sbt_version_no_str.parse::<u16>() {
                         Ok(sbt_version_no) => {
                             if sbt_version_no < MIN_SBT_VERSION {
