@@ -6,6 +6,7 @@ use std::fs;
 
 use std::env;
 use uuid::Uuid;
+use std::time::{Duration, Instant};
 
 use crate::model::*;
 use crate::export::*;
@@ -81,7 +82,6 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
       })
       .collect();
 
-  // TODO: Simplify, with a fold
   let inits: (Vec<&ProdSource>, Vec<&TestSource>) =  (Vec::new(), Vec::new());
   let paired_sources = pairs.iter().fold(inits, |(mut psv, mut tsv), (ps, ts)| {
     psv.push(ps);
@@ -90,9 +90,6 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
   });
 
   let (prod_sources, test_sources) = paired_sources;
-
-  // let prod_sources: Vec<&ProdSource> = pairs.iter().map(|(p,_)| p).collect();
-  // let test_sources: Vec<&TestSource> = pairs.iter().map(|(_,t)| t).collect();
   let sublime_project = build_sublime_project(prod_sources, test_sources);
 
   match serde_json::to_string_pretty(&sublime_project) {
@@ -104,14 +101,19 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
 
 fn run_sbt() -> SBTExecution {
     println!("Running SBT, this may take a while 🙄");
+    let sbt_start = Instant::now();
 
     match Command::new("sbt")
         .arg("set offline := true; print baseDirectory")
         .arg("--error")
         .output() {
           Ok(output) => {
+            let sbt_run_time_secs = sbt_start.elapsed().as_secs();
             match from_utf8(&output.stdout) {
-              Ok(output_str) => get_base_directories(output_str),
+              Ok(output_str) => {
+                println!("SBT execution completed in {} seconds 😧", sbt_run_time_secs);
+                get_base_directories(output_str)
+              },
               Err(error) => SBTExecution::CouldNotDecodeOutput(error.to_string())
             }
           },
