@@ -4,14 +4,15 @@ use std::str::from_utf8;
 use std::path::Path;
 use regex::{Regex, Captures};
 use std::fs;
-use std::io::Write;
+
 use std::env;
 use uuid::Uuid;
 
-
 use crate::model::*;
+use crate::export::*;
 
 mod model;
+mod export;
 
 const SBT_BUILD_PROPERTIES: &str = "project/build.properties";
 const BUILD_SBT: &str = "build.sbt";
@@ -74,7 +75,7 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
   let ProjectType(mut projects) = project_type.clone();
   let pairs: Vec<(ProdSource, TestSource)> =
     projects
-      .iter_mut().map(|p| p.replace(current_directory, ""))
+      .iter_mut().map(|p| p.replace(current_directory, "")) // Make paths relative
       .map({ |p|
         (ProdSource(format!("{}{}", p, SCALA_PROD_PATH)),  TestSource(format!("{}{}", p, SCALA_TEST_PATH)))
     }).collect();
@@ -101,41 +102,6 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
   }
 }
 
-
-fn write_project_file(project_file_content: &[u8], sublime_project_file: &str) -> io::Result<()> {
-  let open_result =
-    fs::OpenOptions::new()
-      .create_new(true)
-      .write(true)
-      .open(sublime_project_file);
-
-  open_result
-    .and_then(|mut file| file.write_all(project_file_content))
-}
-
-fn build_sublime_project(prod_sources: Vec<&ProdSource>, test_sources: Vec<&TestSource>) -> SublimeProject {
-  let po = PathObject { path: ".".to_owned() };
-
-  let scoggle  =
-    ScoggleObject {
-      production_srcs: prod_sources.iter().map(|ps| ps.0.to_owned()).collect(),
-      test_srcs: test_sources.iter().map(|ts| ts.0.to_owned()).collect(),
-      test_suffixes: vec!["Spec.scala".to_string(), "Suite.scala".to_string(), "Test.scala".to_string()],
-    };
-
-  let settings_object =
-    SettingsObject {
-      scoggle: scoggle
-    };
-
-  let sublime_project =
-    SublimeProject {
-      folders: vec![po],
-      settings: settings_object
-    };
-
-  sublime_project
-}
 
 fn run_sbt() -> SBTExecution {
     println!("Running SBT, this may take a while 🙄");
