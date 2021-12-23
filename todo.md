@@ -1,3 +1,6 @@
 # TODO
 
-- [ ] Valid each source path generated (check if they exist)
+- [ ] Add version
+- [ ] Refactor to make the code clearer
+- [ ] Try and use `thiserror` to make the errors nicer
+- [ ] Add colours to the output
