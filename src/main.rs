@@ -139,7 +139,7 @@ fn build_sublime_project(prod_sources: Vec<&ProdSource>, test_sources: Vec<&Test
 
 
 fn run_sbt() -> SBTExecution {
-        println!("Running SBT...");
+        println!("Running SBT, this may take a while 🙄");
 
         match Command::new("sbt")
                 .arg("set offline := true; print baseDirectory")
