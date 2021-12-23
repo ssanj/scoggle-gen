@@ -72,6 +72,16 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
   let project_name = get_project_name(project_name_type);
   let sublime_project_file = format!("{}.sublime-project", project_name);
 
+  let (prod_sources, test_sources) = get_prod_and_test_sources(current_directory, project_type);
+  let sublime_project = build_sublime_project(prod_sources, test_sources);
+
+  match serde_json::to_string_pretty(&sublime_project) {
+    Ok(st_project_json) => write_sublime_project_file(&st_project_json, &sublime_project_file),
+    Err(error) => eprintln!("Could not convert Sublime Text Project model to JSON: {}", error)
+  }
+}
+
+fn get_prod_and_test_sources(current_directory: &str, project_type: ProjectType) -> (Vec<&ProdSource>, Vec<&TestSource>) {
   let ProjectType(projects) = project_type;
   let pairs: Vec<(ProdSource, TestSource)> =
     projects
@@ -83,42 +93,36 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
       .collect();
 
   let inits: (Vec<&ProdSource>, Vec<&TestSource>) =  (Vec::new(), Vec::new());
-  let paired_sources = pairs.iter().fold(inits, |(mut psv, mut tsv), (ps, ts)| {
+  // TODO: Can we solve this without lifetimes?
+  pairs.iter().fold(inits, |(mut psv, mut tsv), (ps, ts)| {
     psv.push(ps);
     tsv.push(ts);
     (psv, tsv)
-  });
-
-  let (prod_sources, test_sources) = paired_sources;
-  let sublime_project = build_sublime_project(prod_sources, test_sources);
-
-  match serde_json::to_string_pretty(&sublime_project) {
-    Ok(st_project_json) => write_sublime_project_file(&st_project_json, &sublime_project_file),
-    Err(error) => eprintln!("Could not convert Sublime Text Project model to JSON: {}", error)
-  }
+  })
 }
 
 
+// TODO: move this out
 fn run_sbt() -> SBTExecution {
-    println!("Running SBT, this may take a while 🙄");
-    let sbt_start = Instant::now();
+  println!("Running SBT, this may take a while 🙄");
+  let sbt_start = Instant::now();
 
-    match Command::new("sbt")
-        .arg("set offline := true; print baseDirectory")
-        .arg("--error")
-        .output() {
-          Ok(output) => {
-            let sbt_run_time_secs = sbt_start.elapsed().as_secs();
-            match from_utf8(&output.stdout) {
-              Ok(output_str) => {
-                println!("SBT execution completed in {} seconds 😧", sbt_run_time_secs);
-                get_base_directories(output_str)
-              },
-              Err(error) => SBTExecution::CouldNotDecodeOutput(error.to_string())
-            }
+  match Command::new("sbt")
+    .arg("set offline := true; print baseDirectory")
+    .arg("--error")
+    .output() {
+      Ok(output) => {
+        let sbt_run_time_secs = sbt_start.elapsed().as_secs();
+        match from_utf8(&output.stdout) {
+          Ok(output_str) => {
+            println!("SBT execution completed in {} seconds 😧", sbt_run_time_secs);
+            get_base_directories(output_str)
           },
-          Err(error) => SBTExecution::CouldNotRun(error.to_string())
+          Err(error) => SBTExecution::CouldNotDecodeOutput(error.to_string())
         }
+      },
+      Err(error) => SBTExecution::CouldNotRun(error.to_string())
+    }
 }
 
 fn get_base_directories(output_str: &str) -> SBTExecution {
