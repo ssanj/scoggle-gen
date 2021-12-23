@@ -65,7 +65,7 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
         ProjectName::ProjectDir(pn) => pn,
         ProjectName::Random() => {
             let random = default_project_name();
-            println!("Could not retrieve project name. Using generated name: {}", random);
+            eprintln!("Could not retrieve project name. Using generated name: {}", random);
             random
         }
     };
@@ -102,8 +102,8 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
             match project_file_written {
                 Ok(_) => println!("Successfully generated {}", sublime_project_file),
                 Err(error) => {
-                    println!("Could not write {} due to: {}. Writing content to stdout", sublime_project_file, error);
-                    println!("{}", project_file_content)
+                    eprintln!("Could not write {} due to: {}. Writing content to stdout", sublime_project_file, error);
+                    eprintln!("{}", project_file_content)
                 }
             }
         },
