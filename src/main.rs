@@ -23,6 +23,7 @@ const SBT_VERSION_REGEX: &str = r"sbt.version\s*=\s*(.+)";
 
 fn main() {
     let cd = env::current_dir().expect("Could not find current dir"); // If this fails we have other issues
+    let re = Regex::new(SBT_VERSION_REGEX).expect("Could not create regex"); // Fail as we should write correct regexes.
     let current_directory = cd.to_string_lossy();
 
     let project_name_type =
@@ -34,7 +35,7 @@ fn main() {
     if !Path::new(BUILD_SBT).exists() {
         println!("Could not find {}. Please run this in an SBT project directory", BUILD_SBT)
     } else {
-        match verify_sbt_version() {
+        match verify_sbt_version(re) {
             SBTVersion::UnsupportedSBTVersion(sbt_version) => println!("Required SBT version >= {}. Your version: {}", MIN_SBT_VERSION_STRING, sbt_version),
             SBTVersion::UnknownVersionString(sbt_version) => println!("Unknown SBT version string: {}", sbt_version),
             SBTVersion::NotFound => println!("Could not find {}. Please run this in an SBT project directory", SBT_BUILD_PROPERTIES),
@@ -131,7 +132,6 @@ fn build_sublime_project(prod_sources: Vec<&ProdSource>, test_sources: Vec<&Test
     sublime_project
 }
 
-
 fn run_sbt() -> SBTExecution {
         println!("Running SBT, this may take a while 🙄");
 
@@ -171,8 +171,7 @@ fn get_base_directories(output_str: &str) -> SBTExecution {
     }
 }
 
-fn verify_sbt_version() -> SBTVersion {
-    let re = Regex::new(SBT_VERSION_REGEX).unwrap(); // Fail as we should write correct regexes.
+fn verify_sbt_version(re: Regex) -> SBTVersion {
     match fs::read_to_string(SBT_BUILD_PROPERTIES) {
         Ok(version) => {
             let caps: Option<Captures> = re.captures(&version);
