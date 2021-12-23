@@ -4,8 +4,10 @@ use std::str::from_utf8;
 use std::path::Path;
 use regex::{Regex, Captures};
 use std::fs;
+use std::io::Write;
 use std::env;
 use uuid::Uuid;
+
 
 use crate::model::*;
 
@@ -86,8 +88,17 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
         Ok(st_project_json) => {
             //check for existing sublime-project and use random in that case
             let project_file_content = format!("{}", st_project_json);
-            let project_file_written =
-                    fs::write(&sublime_project_file, &project_file_content);
+            let project_file_written = {
+                    let open_result =
+                        fs::OpenOptions::new()
+                            .create_new(true)
+                            .write(true)
+                            .open(&sublime_project_file);
+
+                    open_result
+                        .and_then(|mut file| file.write_all(&project_file_content.as_bytes()))
+
+            };
             match project_file_written {
                 Ok(_) => println!("Successfully generated {}", sublime_project_file),
                 Err(error) => {
