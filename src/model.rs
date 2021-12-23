@@ -1,28 +1,3 @@
-// {
-//     "folders":
-//     [
-//         {
-//             "path": "."
-//         }
-//     ],
-//     "settings": {
-//         "Scoggle" : {
-//             "production_srcs" :
-//             [
-//                 "/app"
-//             ],
-//             "test_srcs" :
-//             [
-//                 "/test"
-//             ],
-//             "test_suffixes" :
-//             [
-//                 "Spec.scala"
-//             ]
-//         }
-//     }
-// }
-
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -69,4 +44,9 @@ pub enum SBTVersion {
     UnsupportedSBTVersion(String),
     UnknownVersionString(String),
     NotFound
+}
+
+pub enum ProjectName {
+    ProjectDir(String),
+    Random()
 }

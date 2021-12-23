@@ -5,6 +5,7 @@ use std::path::Path;
 use regex::{Regex, Captures};
 use std::fs;
 use std::env;
+use uuid::Uuid;
 
 use crate::model::*;
 
@@ -18,7 +19,18 @@ const MIN_SBT_VERSION_STRING: &str = "1.4.5";
 fn main() {
     let cd = env::current_dir().expect("Could not find current dir");
     let current_directory = cd.to_string_lossy();
+
+    let project_name_type =
+        cd
+            .file_name()
+            .map(|f| ProjectName::ProjectDir(f.to_string_lossy().to_string()))
+            .unwrap_or_else(|| ProjectName::Random());
+
+
+
+    //TODO: Remove
     println!("current dir: {}", current_directory);
+    // println!("working dir: {}", project_name);
 
     if !Path::new(BUILD_SBT).exists() {
         println!("Could not find {}. Please run this in an SBT project directory", BUILD_SBT)
@@ -34,7 +46,7 @@ fn main() {
                     SBTExecution::CouldNotRun(error) => println!("Could not run sbt: {}", error),
                     SBTExecution::CouldNotDecodeOutput(error) => println!("Invalid UTF8 output from sbt: {}", error),
                     SBTExecution::UnrecognisedOutputStructure(error) => println!("Unrecognised output format from sbt: {}", error),
-                    SBTExecution::SuccessfulExecution(project_type) => handle_project_type(&current_directory, project_type)
+                    SBTExecution::SuccessfulExecution(project_type) => handle_project_type(project_name_type, &current_directory, project_type)
 
                 }
             }
@@ -42,8 +54,22 @@ fn main() {
     }
 }
 
+fn default_project_name() -> String  {
+    format!("scoggle-gen-{}",Uuid::new_v4())
+}
 
-fn handle_project_type(current_directory: &str, project_type: ProjectType) {
+fn handle_project_type(project_name_type: ProjectName, current_directory: &str, project_type: ProjectType) {
+    let project_name = match project_name_type {
+        ProjectName::ProjectDir(pn) => pn,
+        ProjectName::Random() => {
+            let random = default_project_name();
+            println!("Could not retrieve project name. Using generated name: {}", random);
+            random
+        }
+    };
+
+    let sublime_project_file = format!("{}.sublime-project", project_name);
+
     let ProjectType(mut projects) = project_type.clone();
     let pairs: Vec<(ProdSource, TestSource)> =
         projects
@@ -56,8 +82,20 @@ fn handle_project_type(current_directory: &str, project_type: ProjectType) {
     let test_sources: Vec<&TestSource> = pairs.iter().map(|(_,t)| t).collect();
     let sublime_project = build_sublime_project(prod_sources, test_sources);
 
-    match serde_json::to_string(&sublime_project) {
-        Ok(st_project_json) => println!("{}", st_project_json),
+    match serde_json::to_string_pretty(&sublime_project) {
+        Ok(st_project_json) => {
+            //check for existing sublime-project and use random in that case
+            let project_file_content = format!("{}", st_project_json);
+            let project_file_written =
+                    fs::write(&sublime_project_file, &project_file_content);
+            match project_file_written {
+                Ok(_) => println!("Successfully generated {}", sublime_project_file),
+                Err(error) => {
+                    println!("Could not write {} due to: {}. Writing content to stdout", sublime_project_file, error);
+                    println!("{}", project_file_content)
+                }
+            }
+        },
         Err(error) => println!("Could not convert Sublime Text Project model to JSON: {}", error)
     }
 }
