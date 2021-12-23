@@ -72,33 +72,24 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
   let project_name = get_project_name(project_name_type);
   let sublime_project_file = format!("{}.sublime-project", project_name);
 
-  let ProjectType(mut projects) = project_type.clone();
+  let ProjectType(projects) = project_type.clone();
   let pairs: Vec<(ProdSource, TestSource)> =
     projects
-      .iter_mut().map(|p| p.replace(current_directory, "")) // Make paths relative
-      .map({ |p|
-        (ProdSource(format!("{}{}", p, SCALA_PROD_PATH)),  TestSource(format!("{}{}", p, SCALA_TEST_PATH)))
-    }).collect();
+      .iter()
+      .map(|p| {
+          let relative_path = p.replace(current_directory, "");
+          (ProdSource(format!("{}{}", relative_path, SCALA_PROD_PATH)),  TestSource(format!("{}{}", relative_path, SCALA_TEST_PATH)))
+      })
+      .collect();
 
+  // TODO: Simplify, with a fold
   let prod_sources: Vec<&ProdSource> = pairs.iter().map(|(p,_)| p).collect();
   let test_sources: Vec<&TestSource> = pairs.iter().map(|(_,t)| t).collect();
   let sublime_project = build_sublime_project(prod_sources, test_sources);
 
   match serde_json::to_string_pretty(&sublime_project) {
-    Ok(st_project_json) => {
-      let project_file_content = format!("{}", st_project_json);
-      let project_file_content_bytes = project_file_content.as_bytes();
-      let project_file_written = write_project_file(project_file_content_bytes, &sublime_project_file); //{
-
-      match project_file_written {
-        Ok(_) => println!("Successfully generated {}", sublime_project_file),
-        Err(error) => {
-          eprintln!("Could not write {} due to: {}. Writing content to stdout", sublime_project_file, error);
-          eprintln!("{}", project_file_content)
-        }
-      }
-    },
-    Err(error) => println!("Could not convert Sublime Text Project model to JSON: {}", error)
+    Ok(st_project_json) => write_sublime_project_file(&st_project_json, &sublime_project_file),
+    Err(error) => eprintln!("Could not convert Sublime Text Project model to JSON: {}", error)
   }
 }
 
