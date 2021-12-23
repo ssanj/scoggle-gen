@@ -68,7 +68,6 @@ fn get_project_name(project_name_type: ProjectName) -> String {
 }
 
 fn handle_project_type(project_name_type: ProjectName, current_directory: &str, project_type: ProjectType) {
-  // TODO: extract function
   let project_name = get_project_name(project_name_type);
   let sublime_project_file = format!("{}.sublime-project", project_name);
 
@@ -87,18 +86,9 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
   match serde_json::to_string_pretty(&sublime_project) {
     Ok(st_project_json) => {
       let project_file_content = format!("{}", st_project_json);
-      // TODO: extract function
-      let project_file_written = {
-          let open_result =
-            fs::OpenOptions::new()
-              .create_new(true)
-              .write(true)
-              .open(&sublime_project_file);
+      let project_file_content_bytes = project_file_content.as_bytes();
+      let project_file_written = write_project_file(project_file_content_bytes, &sublime_project_file); //{
 
-          open_result
-            .and_then(|mut file| file.write_all(&project_file_content.as_bytes()))
-
-      };
       match project_file_written {
         Ok(_) => println!("Successfully generated {}", sublime_project_file),
         Err(error) => {
@@ -109,6 +99,18 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
     },
     Err(error) => println!("Could not convert Sublime Text Project model to JSON: {}", error)
   }
+}
+
+
+fn write_project_file(project_file_content: &[u8], sublime_project_file: &str) -> io::Result<()> {
+  let open_result =
+    fs::OpenOptions::new()
+      .create_new(true)
+      .write(true)
+      .open(sublime_project_file);
+
+  open_result
+    .and_then(|mut file| file.write_all(project_file_content))
 }
 
 fn build_sublime_project(prod_sources: Vec<&ProdSource>, test_sources: Vec<&TestSource>) -> SublimeProject {
