@@ -37,7 +37,7 @@ fn main() {
     if !Path::new(BUILD_SBT).exists() {
         println!("Could not find {}. Please run this in an SBT project directory", BUILD_SBT)
     } else if !Path::new("project/build.properties").exists() {
-        println!("Could not find project/build.properties. Please run this in an SBT project directory")
+        println!("Could not find {}. Please run this in an SBT project directory", SBT_BUILD_PROPERTIES)
     } else {
         match verify_sbt_version() {
             SBTVersion::UnsupportedSBTVersion(sbt_version) => println!("Required SBT version >= {}. Your version: {}", MIN_SBT_VERSION_STRING, sbt_version),
