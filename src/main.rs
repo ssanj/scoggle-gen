@@ -56,17 +56,20 @@ fn default_project_name() -> String  {
   format!("scoggle-gen-{}",Uuid::new_v4())
 }
 
-fn handle_project_type(project_name_type: ProjectName, current_directory: &str, project_type: ProjectType) {
-  // TODO: extract function
-  let project_name = match project_name_type {
+fn get_project_name(project_name_type: ProjectName) -> String {
+  match project_name_type {
     ProjectName::ProjectDir(pn) => pn,
     ProjectName::Random() => {
       let random = default_project_name();
       eprintln!("Could not retrieve project name. Using generated name: {}", random);
       random
     }
-  };
+  }
+}
 
+fn handle_project_type(project_name_type: ProjectName, current_directory: &str, project_type: ProjectType) {
+  // TODO: extract function
+  let project_name = get_project_name(project_name_type);
   let sublime_project_file = format!("{}.sublime-project", project_name);
 
   let ProjectType(mut projects) = project_type.clone();
