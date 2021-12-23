@@ -1,5 +1,4 @@
 use std::{process::Command};
-use std::io;
 use std::str::from_utf8;
 use std::path::Path;
 use regex::{Regex, Captures};
@@ -31,13 +30,13 @@ fn main() {
     cd
       .file_name()
       .map(|f| ProjectName::ProjectDir(f.to_string_lossy().to_string()))
-      .unwrap_or_else(|| ProjectName::Random());
+      .unwrap_or_else(ProjectName::Random);
 
   if !Path::new(BUILD_SBT).exists() {
     println!("Could not find {}. Please run this in an SBT project directory", BUILD_SBT)
   } else {
     match verify_sbt_version(re) {
-      SBTVersion::UnsupportedSBTVersion(sbt_version) => println!("Required SBT version >= {}. Your version: {}", MIN_SBT_VERSION_STRING, sbt_version),
+      SBTVersion::UnsupportedVersion(sbt_version) => println!("Required SBT version >= {}. Your version: {}", MIN_SBT_VERSION_STRING, sbt_version),
       SBTVersion::UnknownVersionString(sbt_version) => println!("Unknown SBT version string: {}", sbt_version),
       SBTVersion::NotFound => println!("Could not find {}. Please run this in an SBT project directory", SBT_BUILD_PROPERTIES),
       SBTVersion::Valid => {
@@ -72,7 +71,7 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
   let project_name = get_project_name(project_name_type);
   let sublime_project_file = format!("{}.sublime-project", project_name);
 
-  let ProjectType(projects) = project_type.clone();
+  let ProjectType(projects) = project_type;
   let pairs: Vec<(ProdSource, TestSource)> =
     projects
       .iter()
@@ -125,7 +124,7 @@ fn get_base_directories(output_str: &str) -> SBTExecution {
         .iter()
         .enumerate()
         .filter(|(i, _)| (i+1) % 2 == 0) // only get the second line
-        .map(|(_, v)| format!("{}", v.trim()))
+        .map(|(_, v)| v.trim().to_string())
         .collect()
     ))
   } else {
@@ -139,13 +138,13 @@ fn verify_sbt_version(re: Regex) -> SBTVersion {
       let caps: Option<Captures> = re.captures(&version);
       match caps.and_then(|group| group.get(1)).map(|m| m.as_str() ) {
         Some(sbt_version) => {
-          let sbt_version_no_str = sbt_version.split(".").collect::<Vec<&str>>().join("");
+          let sbt_version_no_str = sbt_version.split('.').collect::<Vec<&str>>().join("");
 
           //TODO: extract function - is_valid_sbt_version
           match sbt_version_no_str.parse::<u16>() {
             Ok(sbt_version_no) => {
               if sbt_version_no < MIN_SBT_VERSION {
-                SBTVersion::UnsupportedSBTVersion(sbt_version.to_owned())
+                SBTVersion::UnsupportedVersion(sbt_version.to_owned())
               } else {
                 SBTVersion::Valid
               }

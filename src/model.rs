@@ -41,7 +41,7 @@ pub enum SBTExecution {
 
 pub enum SBTVersion {
   Valid,
-  UnsupportedSBTVersion(String),
+  UnsupportedVersion(String),
   UnknownVersionString(String),
   NotFound
 }
