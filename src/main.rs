@@ -82,8 +82,17 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
       .collect();
 
   // TODO: Simplify, with a fold
-  let prod_sources: Vec<&ProdSource> = pairs.iter().map(|(p,_)| p).collect();
-  let test_sources: Vec<&TestSource> = pairs.iter().map(|(_,t)| t).collect();
+  let inits: (Vec<&ProdSource>, Vec<&TestSource>) =  (Vec::new(), Vec::new());
+  let paired_sources = pairs.iter().fold(inits, |(mut psv, mut tsv), (ps, ts)| {
+    psv.push(ps);
+    tsv.push(ts);
+    (psv, tsv)
+  });
+
+  let (prod_sources, test_sources) = paired_sources;
+
+  // let prod_sources: Vec<&ProdSource> = pairs.iter().map(|(p,_)| p).collect();
+  // let test_sources: Vec<&TestSource> = pairs.iter().map(|(_,t)| t).collect();
   let sublime_project = build_sublime_project(prod_sources, test_sources);
 
   match serde_json::to_string_pretty(&sublime_project) {
