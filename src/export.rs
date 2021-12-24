@@ -3,7 +3,7 @@ use std::io;
 use std::io::Write;
 use std::fs;
 
-pub fn build_sublime_project(prod_sources: Vec<&ProdSource>, test_sources: Vec<&TestSource>) -> SublimeProject {
+pub fn build_sublime_project(prod_sources: Vec<ProdSource>, test_sources: Vec<TestSource>) -> SublimeProject {
   let po = PathObject { path: ".".to_owned() };
 
   let scoggle  =

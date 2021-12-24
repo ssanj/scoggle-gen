@@ -24,8 +24,10 @@ pub struct ScoggleObject {
   pub test_suffixes: Vec<String>,
 }
 
+#[derive(Clone)]
 pub struct ProdSource(pub String);
 
+#[derive(Clone)]
 pub struct TestSource(pub String);
 
 

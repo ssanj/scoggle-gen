@@ -45,7 +45,7 @@ fn main() {
           SBTExecution::CouldNotRun(error) => println!("Could not run sbt: {}", error),
           SBTExecution::CouldNotDecodeOutput(error) => println!("Invalid UTF8 output from sbt: {}", error),
           SBTExecution::UnrecognisedOutputStructure(error) => println!("Unrecognised output format from sbt: {}", error),
-          SBTExecution::SuccessfulExecution(project_type) => handle_project_type(project_name_type, &current_directory, project_type)
+          SBTExecution::SuccessfulExecution(project_type) => handle_project_type(&project_name_type, &current_directory, &project_type)
 
         }
       }
@@ -57,9 +57,9 @@ fn default_project_name() -> String  {
   format!("scoggle-gen-{}",Uuid::new_v4())
 }
 
-fn get_project_name(project_name_type: ProjectName) -> String {
+fn get_project_name(project_name_type: &ProjectName) -> String {
   match project_name_type {
-    ProjectName::ProjectDir(pn) => pn,
+    ProjectName::ProjectDir(pn) => pn.to_string(),
     ProjectName::Random() => {
       let random = default_project_name();
       eprintln!("Could not retrieve project name. Using generated name: {}", random);
@@ -68,7 +68,7 @@ fn get_project_name(project_name_type: ProjectName) -> String {
   }
 }
 
-fn handle_project_type(project_name_type: ProjectName, current_directory: &str, project_type: ProjectType) {
+fn handle_project_type(project_name_type: &ProjectName, current_directory: &str, project_type: &ProjectType) {
   let project_name = get_project_name(project_name_type);
   let sublime_project_file = format!("{}.sublime-project", project_name);
 
@@ -81,7 +81,7 @@ fn handle_project_type(project_name_type: ProjectName, current_directory: &str, 
   }
 }
 
-fn get_prod_and_test_sources(current_directory: &str, project_type: ProjectType) -> (Vec<&ProdSource>, Vec<&TestSource>) {
+fn get_prod_and_test_sources(current_directory: &str, project_type: &ProjectType) -> (Vec<ProdSource>, Vec<TestSource>) {
   let ProjectType(projects) = project_type;
   let pairs: Vec<(ProdSource, TestSource)> =
     projects
@@ -92,11 +92,11 @@ fn get_prod_and_test_sources(current_directory: &str, project_type: ProjectType)
       })
       .collect();
 
-  let inits: (Vec<&ProdSource>, Vec<&TestSource>) =  (Vec::new(), Vec::new());
+  let inits: (Vec<ProdSource>, Vec<TestSource>) =  (Vec::new(), Vec::new());
   // TODO: Can we solve this without lifetimes?
   pairs.iter().fold(inits, |(mut psv, mut tsv), (ps, ts)| {
-    psv.push(ps);
-    tsv.push(ts);
+    psv.push(ps.clone());
+    tsv.push(ts.clone());
     (psv, tsv)
   })
 }
