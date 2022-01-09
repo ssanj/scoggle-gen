@@ -1,6 +1,7 @@
 use std::path::Path;
 use regex::Regex;
 use std::env;
+use clap::{App, Arg};
 
 use crate::model::*;
 use crate::sbt::*;
@@ -10,6 +11,32 @@ mod export;
 mod sbt;
 
 fn main() {
+
+  const APPVERSION: &str = env!("CARGO_PKG_VERSION");
+
+  let app = App::new("scoggle-gen")
+      .version(APPVERSION)
+      .author("Sanj Sahayam")
+      .about("Auto-generate Scoggle config for Sublime Text")
+      .arg(
+          Arg::new("sublime")
+              .short('s')
+              .long("sublime")
+              .help("Generate Sublime Text Configuration")
+      );
+
+  let mut app2 = app.clone();
+  let matches = app.get_matches();
+
+  if matches.is_present("sublime") {
+    run_program()
+  } else {
+    app2.print_help().unwrap();
+    println!()
+  }
+}
+
+fn run_program() {
   let cd = env::current_dir().expect("Could not find current dir"); // If this fails we have other issues
   let re = Regex::new(SBT_VERSION_REGEX).expect("Could not create regex"); // Fail as we should write correct regexes.
   let current_directory = cd.to_string_lossy();
