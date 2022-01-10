@@ -11,6 +11,7 @@ pub const SBT_VERSION_REGEX: &str = r"sbt.version\s*=\s*(.+)";
 pub const SBT_BUILD_PROPERTIES: &str = "project/build.properties";
 pub const BUILD_SBT: &str = "build.sbt";
 pub const MIN_SBT_VERSION: u16 = 145;
+pub const MAX_SBT_VERSION: u16 = 1300;
 pub const MIN_SBT_VERSION_STRING: &str = "1.4.5";
 pub const SCALA_PROD_PATH: &str = "/src/main/scala";
 pub const SCALA_TEST_PATH: &str = "/src/test/scala";
@@ -49,7 +50,7 @@ pub fn verify_sbt_version(re: Regex) -> SBTVersion {
           //TODO: extract function - is_valid_sbt_version
           match sbt_version_no_str.parse::<u16>() {
             Ok(sbt_version_no) => {
-              if sbt_version_no < MIN_SBT_VERSION {
+              if sbt_version_no < MIN_SBT_VERSION || sbt_version_no >= MAX_SBT_VERSION {
                 SBTVersion::UnsupportedVersion(sbt_version.to_owned())
               } else {
                 SBTVersion::Valid
