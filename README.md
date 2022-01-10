@@ -6,11 +6,20 @@ If you have a bizzaro setup of source and test sources, then you only have ourse
 
 ## Usage
 
-run scoggle-gen in the root of your SBT project folder.
+Run `scoggle-gen` in the root of your SBT project folder:
+
+```
+scoggle-gen -s
+```
 
 It requires a minimum of SBT 1.4.5 to be used on the project for it to generate your project file.
 
 ## Installation
+
+### Download
+
+Download from [release](https://github.com/ssanj/scoggle-gen/releases) page.
+
 
 ### Build from source
 
@@ -18,6 +27,3 @@ It requires a minimum of SBT 1.4.5 to be used on the project for it to generate 
 - Run `cargo build --release`
 - Copy the executable from the `target/release/scoggle-gen` into a folder on your path
 
-### From GH
-
-- TODO
