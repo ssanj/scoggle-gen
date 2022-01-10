@@ -39,6 +39,7 @@ pub fn run_sbt() -> SBTExecution {
     }
 }
 
+#[allow(clippy::manual_range_contains)]
 pub fn verify_sbt_version(re: Regex) -> SBTVersion {
   match fs::read_to_string(SBT_BUILD_PROPERTIES) {
     Ok(version) => {
