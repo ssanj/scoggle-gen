@@ -46,8 +46,15 @@ pub fn write_sublime_project_file(st_project_json: &str, sublime_project_file: &
   match project_file_written {
     Ok(_) => print_success(format!("Successfully generated {}", sublime_project_file)),
     Err(error) => {
-      print_error(format!("Could not write {} due to: {}. Writing content to stdout: ", sublime_project_file, error));
-      println!("{}", project_file_content)
+      if error.kind() == io::ErrorKind::AlreadyExists {
+        print_error(format!("Output file {} already exists. Writing content to stdout:", sublime_project_file))
+      } else {
+        print_error(format!("Could not write {} due to: {}. Writing content to stdout:", sublime_project_file, error))
+      }
+
+      println!("```");
+      println!("{}", project_file_content);
+      println!("```")
     }
   }
 }
