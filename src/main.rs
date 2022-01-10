@@ -2,14 +2,15 @@ use std::path::Path;
 use regex::Regex;
 use std::env;
 use clap::{App, Arg};
-use ansi_term::Colour::Red;
 
 use crate::model::*;
 use crate::sbt::*;
+use crate::term::print_error;
 
 mod model;
 mod export;
 mod sbt;
+mod term;
 
 fn main() {
 
@@ -69,6 +70,4 @@ fn run_program() {
   }
 }
 
-fn print_error(message: String) {
-  println!("{}{}", Red.paint("Error: "), message)
-}
+

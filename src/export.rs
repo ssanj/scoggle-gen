@@ -2,6 +2,7 @@ use crate::model::*;
 use std::io;
 use std::io::Write;
 use std::fs;
+use crate::term::*;
 
 pub fn build_sublime_project(prod_sources: Vec<ProdSource>, test_sources: Vec<TestSource>) -> SublimeProject {
   let po = PathObject { path: ".".to_owned() };
@@ -43,10 +44,10 @@ pub fn write_sublime_project_file(st_project_json: &str, sublime_project_file: &
   let project_file_written = write_project_file(project_file_content_bytes, sublime_project_file); //{
 
   match project_file_written {
-    Ok(_) => println!("Successfully generated {}", sublime_project_file),
+    Ok(_) => print_success(format!("Successfully generated {}", sublime_project_file)),
     Err(error) => {
-      eprintln!("Could not write {} due to: {}. Writing content to stdout", sublime_project_file, error);
-      eprintln!("{}", project_file_content)
+      print_error(format!("Could not write {} due to: {}. Writing content to stdout: ", sublime_project_file, error));
+      println!("{}", project_file_content)
     }
   }
 }
