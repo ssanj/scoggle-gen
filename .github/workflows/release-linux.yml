@@ -32,7 +32,7 @@ jobs:
         rustc -Vv
         cargo -V
         cargo build --release
-        echo "::set-output name=release-artifact-name::target/release/${{ github.event.pull_request.base.repo.name }}"
+        echo "::set-output name=release-artifact-name::target/release/scoggle-gen"
 
     - name: copy-artifact
       id: copy-artifact
