@@ -7,6 +7,7 @@ use regex::{Regex, Captures};
 use std::fs;
 use uuid::Uuid;
 
+// TODO: Update this regex to take numbers not any chars
 pub const SBT_VERSION_REGEX: &str = r"sbt.version\s*=\s*(.+)";
 pub const SBT_BUILD_PROPERTIES: &str = "project/build.properties";
 pub const BUILD_SBT: &str = "build.sbt";
@@ -46,6 +47,7 @@ pub fn verify_sbt_version(re: Regex) -> SBTVersion {
       let caps: Option<Captures> = re.captures(&version);
       match caps.and_then(|group| group.get(1)).map(|m| m.as_str() ) {
         Some(sbt_version) => {
+          // TODO: Replace this body with validate_sbt_version
           let sbt_version_no_str = sbt_version.split('.').collect::<Vec<&str>>().join("");
 
           //TODO: extract function - is_valid_sbt_version
@@ -67,6 +69,7 @@ pub fn verify_sbt_version(re: Regex) -> SBTVersion {
     Err(_) => SBTVersion::NotFound
   }
 }
+
 
 fn default_project_name() -> String  {
   format!("scoggle-gen-{}",Uuid::new_v4())
@@ -136,4 +139,53 @@ fn get_base_directories(output_str: &str) -> SBTExecution {
   } else {
     SBTExecution::UnrecognisedOutputStructure(format!("{:?}", &lines))
   }
+}
+
+fn validate_sbt_version(sbt_version: &str) -> SBTVersion {
+  let version_parts = sbt_version.split('.').collect::<Vec<&str>>();
+  match version_parts [..] {
+    ["0", _, _] => SBTVersion::UnsupportedVersion(sbt_version.to_string()),
+    ["1", minor, patch] => {
+      let minor_version = minor.parse::<u8>();
+      let patch_version = patch.parse::<u8>();
+
+      match (minor_version, patch_version) {
+        (Ok(m), Ok(p)) =>
+          if m == 4 && p >= 5 {
+            SBTVersion::Valid
+          } else if m > 4 {
+            SBTVersion::Valid
+          } else {
+            SBTVersion::UnsupportedVersion(sbt_version.to_string())
+          },
+        (_, _) => SBTVersion::UnknownVersionString(sbt_version.to_string())
+      }
+    },
+    _ => SBTVersion::UnknownVersionString(sbt_version.to_string())
+  }
+}
+
+//----------------------------------------------------------------
+// Tests
+//----------------------------------------------------------------
+
+#[test]
+fn validate_sbt_version_valid() {
+  assert_eq!(validate_sbt_version("1.4.5"), SBTVersion::Valid);
+  assert_eq!(validate_sbt_version("1.4.6"), SBTVersion::Valid);
+  assert_eq!(validate_sbt_version("1.5.0"), SBTVersion::Valid);
+  assert_eq!(validate_sbt_version("1.6.5"), SBTVersion::Valid)
+}
+
+#[test]
+fn validate_sbt_version_unsupported() {
+  assert_eq!(validate_sbt_version("0.13.1"), SBTVersion::UnsupportedVersion("0.13.1".to_string()));
+  assert_eq!(validate_sbt_version("1.4.4"), SBTVersion::UnsupportedVersion("1.4.4".to_string()));
+  assert_eq!(validate_sbt_version("1.3.6"), SBTVersion::UnsupportedVersion("1.3.6".to_string()));
+}
+
+#[test]
+fn validate_sbt_version_unknown_version() {
+  assert_eq!(validate_sbt_version("a.b.c"), SBTVersion::UnknownVersionString("a.b.c".to_string()));
+  assert_eq!(validate_sbt_version("1.b.5"), SBTVersion::UnknownVersionString("1.b.5".to_string()));
 }

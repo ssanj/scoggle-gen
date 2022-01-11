@@ -41,6 +41,7 @@ pub enum SBTExecution {
   SuccessfulExecution(ProjectType)
 }
 
+#[derive(Debug, PartialEq)]
 pub enum SBTVersion {
   Valid,
   UnsupportedVersion(String),
