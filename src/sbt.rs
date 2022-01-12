@@ -11,8 +11,6 @@ use uuid::Uuid;
 pub const SBT_VERSION_REGEX: &str = r"sbt.version\s*=\s*(.+)";
 pub const SBT_BUILD_PROPERTIES: &str = "project/build.properties";
 pub const BUILD_SBT: &str = "build.sbt";
-pub const MIN_SBT_VERSION: u16 = 145;
-pub const MAX_SBT_VERSION: u16 = 1300;
 pub const MIN_SBT_VERSION_STRING: &str = "1.4.5";
 pub const SCALA_PROD_PATH: &str = "/src/main/scala";
 pub const SCALA_TEST_PATH: &str = "/src/test/scala";
@@ -46,24 +44,8 @@ pub fn verify_sbt_version(re: Regex) -> SBTVersion {
     Ok(version) => {
       let caps: Option<Captures> = re.captures(&version);
       match caps.and_then(|group| group.get(1)).map(|m| m.as_str() ) {
-        Some(sbt_version) => {
-          // TODO: Replace this body with validate_sbt_version
-          let sbt_version_no_str = sbt_version.split('.').collect::<Vec<&str>>().join("");
-
-          //TODO: extract function - is_valid_sbt_version
-          match sbt_version_no_str.parse::<u16>() {
-            Ok(sbt_version_no) => {
-              if sbt_version_no < MIN_SBT_VERSION || sbt_version_no >= MAX_SBT_VERSION {
-                SBTVersion::UnsupportedVersion(sbt_version.to_owned())
-              } else {
-                SBTVersion::Valid
-              }
-            },
-            Err(_) => SBTVersion::UnknownVersionString(sbt_version.to_owned())
-          }
-        },
+        Some(sbt_version) => validate_sbt_version(sbt_version),
         None => SBTVersion::UnknownVersionString(version.to_owned())
-
       }
     },
     Err(_) => SBTVersion::NotFound
@@ -151,9 +133,9 @@ fn validate_sbt_version(sbt_version: &str) -> SBTVersion {
 
       match (minor_version, patch_version) {
         (Ok(m), Ok(p)) =>
-          if m == 4 && p >= 5 {
-            SBTVersion::Valid
-          } else if m > 4 {
+          //support a minimum sbt version of 1.4.5
+          // MIN_SBT_VERSION_STRING
+          if (m == 4 && p >= 5) || (m > 4) {
             SBTVersion::Valid
           } else {
             SBTVersion::UnsupportedVersion(sbt_version.to_string())

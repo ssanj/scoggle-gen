@@ -63,7 +63,6 @@ fn run_program() {
           SBTExecution::CouldNotDecodeOutput(error) => print_error(format!("Invalid UTF8 output from sbt: {}", error)),
           SBTExecution::UnrecognisedOutputStructure(error) => print_error(format!("Unrecognised output format from sbt: {}", error)),
           SBTExecution::SuccessfulExecution(project_type) => handle_project_type(&project_name_type, &current_directory, &project_type)
-
         }
       }
     }
