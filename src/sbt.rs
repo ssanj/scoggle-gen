@@ -125,20 +125,21 @@ fn get_base_directories(output_str: &str) -> SBTExecution {
 
 fn validate_sbt_version(sbt_version: &str) -> SBTVersion {
   let version_parts = sbt_version.split('.').collect::<Vec<&str>>();
+  let support_sbt_version = SupportedSBTVersion(MIN_SBT_VERSION_STRING.to_string());
+
   match version_parts [..] {
-    ["0", _, _] => SBTVersion::UnsupportedVersion(sbt_version.to_string()),
+    ["0", _, _] => SBTVersion::UnsupportedVersion(sbt_version.to_string(), support_sbt_version),
     ["1", minor, patch] => {
       let minor_version = minor.parse::<u8>();
       let patch_version = patch.parse::<u8>();
 
       match (minor_version, patch_version) {
         (Ok(m), Ok(p)) =>
-          //support a minimum sbt version of 1.4.5
-          // MIN_SBT_VERSION_STRING
+          //support a minimum sbt version of 1.4.5 (MIN_SBT_VERSION_STRING)
           if (m == 4 && p >= 5) || (m > 4) {
             SBTVersion::Valid
           } else {
-            SBTVersion::UnsupportedVersion(sbt_version.to_string())
+            SBTVersion::UnsupportedVersion(sbt_version.to_string(), support_sbt_version)
           },
         (_, _) => SBTVersion::UnknownVersionString(sbt_version.to_string())
       }
@@ -161,9 +162,10 @@ fn validate_sbt_version_valid() {
 
 #[test]
 fn validate_sbt_version_unsupported() {
-  assert_eq!(validate_sbt_version("0.13.1"), SBTVersion::UnsupportedVersion("0.13.1".to_string()));
-  assert_eq!(validate_sbt_version("1.4.4"), SBTVersion::UnsupportedVersion("1.4.4".to_string()));
-  assert_eq!(validate_sbt_version("1.3.6"), SBTVersion::UnsupportedVersion("1.3.6".to_string()));
+  let supported_sbt_version = SupportedSBTVersion("1.4.5".to_string());
+  assert_eq!(validate_sbt_version("0.13.1"), SBTVersion::UnsupportedVersion("0.13.1".to_string(), supported_sbt_version.clone()));
+  assert_eq!(validate_sbt_version("1.4.4"), SBTVersion::UnsupportedVersion("1.4.4".to_string(), supported_sbt_version.clone()));
+  assert_eq!(validate_sbt_version("1.3.6"), SBTVersion::UnsupportedVersion("1.3.6".to_string(), supported_sbt_version));
 }
 
 #[test]

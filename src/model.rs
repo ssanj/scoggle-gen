@@ -44,10 +44,13 @@ pub enum SBTExecution {
 #[derive(Debug, PartialEq)]
 pub enum SBTVersion {
   Valid,
-  UnsupportedVersion(String),
+  UnsupportedVersion(String, SupportedSBTVersion),
   UnknownVersionString(String),
   NotFound
 }
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct SupportedSBTVersion(pub String);
 
 pub enum ProjectName {
   ProjectDir(String),

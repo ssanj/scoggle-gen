@@ -54,7 +54,7 @@ fn run_program() {
     print_error(format!("Could not find {}. Please run this in an SBT project directory", BUILD_SBT))
   } else {
     match verify_sbt_version(re) {
-      SBTVersion::UnsupportedVersion(sbt_version) => print_error(format!("Required SBT version >= {}. Your version: {}", MIN_SBT_VERSION_STRING, sbt_version)),
+      SBTVersion::UnsupportedVersion(sbt_version, SupportedSBTVersion(min_sbt_version)) => print_error(format!("Required SBT version >= {}. Your version: {}", min_sbt_version, sbt_version)),
       SBTVersion::UnknownVersionString(sbt_version) => print_error(format!("Unknown SBT version string: {}", sbt_version)),
       SBTVersion::NotFound => print_error(format!("Could not find {}. Please run this in an SBT project directory", SBT_BUILD_PROPERTIES)),
       SBTVersion::Valid => {
