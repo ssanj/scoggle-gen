@@ -46,7 +46,8 @@ pub enum SBTVersion {
   Valid,
   UnsupportedVersion(String, SupportedSBTVersion),
   UnknownVersionString(String),
-  NotFound
+  BuildPropertiesNotFound,
+  BuildSBTNotFound
 }
 
 #[derive(Debug, PartialEq, Clone)]

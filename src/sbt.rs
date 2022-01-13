@@ -3,6 +3,7 @@ use crate::export::*;
 use std::time::Instant;
 use std::str::from_utf8;
 use std::process::Command;
+use std::path::Path;
 use regex::{Regex, Captures};
 use std::fs;
 use uuid::Uuid;
@@ -40,15 +41,19 @@ pub fn run_sbt() -> SBTExecution {
 
 #[allow(clippy::manual_range_contains)]
 pub fn verify_sbt_version(re: Regex) -> SBTVersion {
-  match fs::read_to_string(SBT_BUILD_PROPERTIES) {
-    Ok(version) => {
-      let caps: Option<Captures> = re.captures(&version);
-      match caps.and_then(|group| group.get(1)).map(|m| m.as_str() ) {
-        Some(sbt_version) => validate_sbt_version(sbt_version),
-        None => SBTVersion::UnknownVersionString(version.to_owned())
-      }
-    },
-    Err(_) => SBTVersion::NotFound
+  if !Path::new(BUILD_SBT).exists() {
+    SBTVersion::BuildSBTNotFound
+  } else {
+    match fs::read_to_string(SBT_BUILD_PROPERTIES) {
+      Ok(version) => {
+        let caps: Option<Captures> = re.captures(&version);
+        match caps.and_then(|group| group.get(1)).map(|m| m.as_str() ) {
+          Some(sbt_version) => validate_sbt_version(sbt_version),
+          None => SBTVersion::UnknownVersionString(version.to_owned())
+        }
+      },
+      Err(_) => SBTVersion::BuildPropertiesNotFound
+    }
   }
 }
 
@@ -93,7 +98,6 @@ fn get_prod_and_test_sources(current_directory: &str, project_type: &ProjectType
       .collect();
 
   let inits: (Vec<ProdSource>, Vec<TestSource>) =  (Vec::new(), Vec::new());
-  // TODO: Can we solve this without lifetimes?
   pairs.iter().fold(inits, |(mut psv, mut tsv), (ps, ts)| {
     psv.push(ps.clone());
     tsv.push(ts.clone());
