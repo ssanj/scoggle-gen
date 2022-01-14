@@ -57,3 +57,8 @@ pub enum ProjectName {
   ProjectDir(String),
   Random()
 }
+
+pub enum Confirmation {
+  YES,
+  NO
+}
