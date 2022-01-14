@@ -15,6 +15,16 @@ fn main() {
 
   const APPVERSION: &str = env!("CARGO_PKG_VERSION");
 
+  let sublime_help_text: &str = &format!(
+      "Generates a Sublime Text project file for Scoggle.\n\
+       Run from the root of an SBT project. \n\
+       Needs access to {} and {} \n\
+       Supports SBT versions >= {} \n\
+       See: https://packagecontrol.io/packages/Scoggle
+      ", BUILD_SBT, SBT_BUILD_PROPERTIES, MIN_SBT_VERSION_STRING
+  );
+
+
   let app = App::new("scoggle-gen")
       .version(APPVERSION)
       .author("Sanj Sahayam")
@@ -23,7 +33,8 @@ fn main() {
           Arg::new("sublime")
               .short('s')
               .long("sublime")
-              .help("Generate Sublime Text Configuration")
+              .next_line_help(true)
+              .help(sublime_help_text)
       );
 
   let mut app2 = app.clone();
