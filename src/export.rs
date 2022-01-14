@@ -59,7 +59,7 @@ pub fn write_sublime_project_file(st_project_json: &str, sublime_project_file: &
     Err(error) => {
       if error.kind() == io::ErrorKind::AlreadyExists {
         match read_overwrite_response(&format!("{} already exists. Overwrite Y/N ?", sublime_project_file)) {
-          Confirmation::YES => {
+          Confirmation::Yes => {
             println!("Overwriting {}", sublime_project_file);
             match overwrite_project_file(project_file_content_bytes, sublime_project_file) {
               Ok(_) => print_success(format!("Successfully generated {}", sublime_project_file)),
@@ -70,7 +70,7 @@ pub fn write_sublime_project_file(st_project_json: &str, sublime_project_file: &
               }
             }
           },
-          Confirmation::NO => {
+          Confirmation::No => {
             println!("Writing content to stdout:");
             write_project_to_stdout(&project_file_content)
           }
@@ -96,10 +96,10 @@ fn read_overwrite_response(question: &str) -> Confirmation {
     Ok(_) => {
       let response = buffer[0] as char;
       match response {
-        'Y' | 'y' => Confirmation::YES,
-        _ => Confirmation::NO
+        'Y' | 'y' => Confirmation::Yes,
+        _ => Confirmation::No
       }
     },
-    Err(_) => Confirmation::NO
+    Err(_) => Confirmation::No
   }
 }

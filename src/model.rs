@@ -59,6 +59,6 @@ pub enum ProjectName {
 }
 
 pub enum Confirmation {
-  YES,
-  NO
+  Yes,
+  No
 }

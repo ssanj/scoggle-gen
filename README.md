@@ -6,7 +6,32 @@ If you have a bizzaro setup of source and test sources, then you only have ourse
 
 ## Usage
 
-Run `scoggle-gen` in the root of your SBT project folder:
+Run `scoggle-gen --help` for usage information:
+
+```
+scoggle-gen 0.1.5
+Sanj Sahayam
+Auto-generate Scoggle config for Sublime Text
+
+USAGE:
+    scoggle-gen [OPTIONS]
+
+OPTIONS:
+    -h, --help
+            Print help information
+
+    -s, --sublime
+            Generates a Sublime Text project file for Scoggle.
+            Run from the root of an SBT project.
+            Needs access to build.sbt and project/build.properties
+            Supports SBT versions >= 1.4.5
+            see: https://packagecontrol.io/packages/Scoggle
+
+    -V, --version
+            Print version information
+```
+
+To generate a Sublime Text project configuration for Scoggle, run `scoggle-gen` in the root of your SBT project folder:
 
 ```
 scoggle-gen -s
