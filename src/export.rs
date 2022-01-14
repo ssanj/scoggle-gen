@@ -52,27 +52,40 @@ pub fn overwrite_project_file(project_file_content: &[u8], sublime_project_file:
 pub fn write_sublime_project_file(st_project_json: &str, sublime_project_file: &str) {
   let project_file_content = st_project_json.to_string();
   let project_file_content_bytes = project_file_content.as_bytes();
-  let project_file_written = write_new_project_file(project_file_content_bytes, sublime_project_file); //{
+  let project_file_written = write_new_project_file(project_file_content_bytes, sublime_project_file);
 
   match project_file_written {
     Ok(_) => print_success(format!("Successfully generated {}", sublime_project_file)),
     Err(error) => {
       if error.kind() == io::ErrorKind::AlreadyExists {
         match read_overwrite_response(&format!("{} already exists. Overwrite Y/N ?", sublime_project_file)) {
-          Confirmation::YES => println!("you decided to overwrite"),
-          Confirmation::NO => println!("you chose not to overwrite")
+          Confirmation::YES => {
+            println!("Overwriting {}", sublime_project_file);
+            match overwrite_project_file(project_file_content_bytes, sublime_project_file) {
+              Ok(_) => print_success(format!("Successfully generated {}", sublime_project_file)),
+              Err(e) => {
+                print_error(format!("Could not overwrite {} because of error: {}", sublime_project_file, e));
+                println!("Writing content to stdout:");
+                write_project_to_stdout(&project_file_content)
+              }
+            }
+          },
+          Confirmation::NO => {
+            println!("Writing content to stdout:");
+            write_project_to_stdout(&project_file_content)
+          }
         }
-        // overwrite_project_file(project_file_content_bytes, sublime_project_file)
-        print_error(format!("Output file {} already exists. Writing content to stdout:", sublime_project_file))
       } else {
         print_error(format!("Could not write {} due to: {}. Writing content to stdout:", sublime_project_file, error))
       }
-
-      println!("```");
-      println!("{}", project_file_content);
-      println!("```")
     }
   }
+}
+
+fn write_project_to_stdout(project_file_content: &str) {
+    println!("```");
+    println!("{}", project_file_content);
+    println!("```")
 }
 
 fn read_overwrite_response(question: &str) -> Confirmation {
