@@ -1,5 +1,7 @@
 # README
 
+![](https://img.shields.io/github/v/release/ssanj/scoggle-gen?display_name=tag)
+
 A tool that generates a Sublime Text project file that helps you get started using [Scoggle](https://packagecontrol.io/packages/Scoggle). While Scoggle-Gen may not find every single source and test root you have, it will get you setup pretty quick and you can then hack away at it to your hearts content.
 
 If you have a bizzaro setup of source and test sources, then you only have ourself to blame and can create your own project file :P
@@ -9,7 +11,7 @@ If you have a bizzaro setup of source and test sources, then you only have ourse
 Run `scoggle-gen --help` for usage information:
 
 ```
-scoggle-gen 0.1.5
+scoggle-gen 0.1.6
 Sanj Sahayam
 Auto-generate Scoggle config for Sublime Text
 
