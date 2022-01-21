@@ -24,6 +24,12 @@ fn main() {
       ", BUILD_SBT, SBT_BUILD_PROPERTIES, MIN_SBT_VERSION_STRING
   );
 
+  let memory_help_text: &str =
+      "Specifies JVM heap supplied to SBT in Megabytes.\n\
+       Use this for large SBT projects that need more memory to run. \n\
+       An example value is '2048' (2 Gigabytes) \n\
+       Use this with the sublime option.";
+
 
   let app = App::new("scoggle-gen")
       .version(APPVERSION)
@@ -34,21 +40,38 @@ fn main() {
               .short('s')
               .long("sublime")
               .next_line_help(true)
-              .help(sublime_help_text)
+              .help(sublime_help_text),
+      )
+      .arg(
+          Arg::new("memory")
+              .short('m')
+              .long("mem")
+              .takes_value(true)
+              .next_line_help(true)
+              .help(memory_help_text)
       );
 
   let mut app2 = app.clone();
   let matches = app.get_matches();
 
   if matches.is_present("sublime") {
-    run_program()
+    let sbt_mem = match matches.value_of("memory") {
+      Some(mem_selected) => {
+       mem_selected.parse::<u32>()
+       .map(|m| SBTMemory::CustomMemoryInMB(m))
+       .unwrap_or( SBTMemory::DefaultMemory)
+      },
+      None => SBTMemory::DefaultMemory
+    };
+
+    run_program(sbt_mem)
   } else {
     app2.print_help().unwrap();
     println!()
   }
 }
 
-fn run_program() {
+fn run_program(sbt_memory: SBTMemory) {
   // If this fails we have other issues
   let cd = env::current_dir().expect("Could not find current dir");
 
@@ -75,7 +98,7 @@ fn run_program() {
         format!("Could not find {}. Please run this in an SBT project directory", SBT_BUILD_PROPERTIES)
       ),
     SBTVersion::Valid => {
-      match run_sbt() {
+      match run_sbt(sbt_memory) {
         SBTExecution::CouldNotRun(error) =>
           print_error(format!("Could not run sbt: {}", error)),
         SBTExecution::CouldNotDecodeOutput(error) =>

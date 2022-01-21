@@ -17,13 +17,23 @@ pub const SCALA_PROD_PATH: &str = "/src/main/scala";
 pub const SCALA_TEST_PATH: &str = "/src/test/scala";
 
 
-pub fn run_sbt() -> SBTExecution {
+pub fn run_sbt(sbt_memory: SBTMemory) -> SBTExecution {
   println!("Running SBT, this may take a while 🙄");
   let sbt_start = Instant::now();
 
-  match Command::new("sbt")
+  let mut command = Command::new("sbt");
+
+  if let SBTMemory::CustomMemoryInMB(more_mem) = sbt_memory {
+    command.arg("-mem").arg(format!("{}", more_mem));
+  };
+
+  command
     .arg("set offline := true; print baseDirectory")
-    .arg("--error")
+    .arg("--error");
+
+  println!("running: {:?}", &command);
+
+  match command
     .output() {
       Ok(output) => {
         let sbt_run_time_secs = sbt_start.elapsed().as_secs();

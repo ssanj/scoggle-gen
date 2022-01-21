@@ -62,3 +62,9 @@ pub enum Confirmation {
   Yes,
   No
 }
+
+#[derive(PartialEq)]
+pub enum SBTMemory {
+  DefaultMemory,
+  CustomMemoryInMB(u32)
+}
