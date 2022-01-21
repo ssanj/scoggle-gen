@@ -58,8 +58,8 @@ fn main() {
     let sbt_mem = match matches.value_of("memory") {
       Some(mem_selected) => {
        mem_selected.parse::<u32>()
-       .map(|m| SBTMemory::CustomMemoryInMB(m))
-       .unwrap_or( SBTMemory::DefaultMemory)
+         .map(|m| SBTMemory::CustomMemoryInMB(m))
+         .unwrap_or(SBTMemory::DefaultMemory)
       },
       None => SBTMemory::DefaultMemory
     };
